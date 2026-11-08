@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "图片感知记忆",
+    "description": "用 dHash + pHash 认出以前见过的图片，并唤起当时聊过的内容。"
+  }
+}

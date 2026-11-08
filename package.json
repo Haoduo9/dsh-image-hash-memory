@@ -1,0 +1,47 @@
+{
+  "name": "dsh-image-hash-memory",
+  "version": "0.1.0",
+  "description": "基于感知哈希（dHash + aHash + pHash）的图片记忆插件：跨会话认出「这张图我见过」，并把历史上下文注入模型",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "author": "Haoduo9",
+  "homepage": "https://github.com/Haoduo9/dsh-image-hash-memory",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Haoduo9/dsh-image-hash-memory.git"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "image",
+    "phash",
+    "dhash",
+    "visual-memory"
+  ],
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

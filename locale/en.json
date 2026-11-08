@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Image hash memory",
+    "description": "Recognizes images it has seen before using dHash + pHash, and recalls what was said about them."
+  }
+}

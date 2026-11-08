@@ -1,0 +1,19 @@
+# Mount the perceptual image memory plugin.
+#
+# 每轮用户消息带图时算 dHash/aHash/pHash，查本地 SQLite 视觉记忆库，
+# 命中就把历史上下文注入模型。字段改动会直接反映到「设置 → 插件」的表单。
+- insert:
+    - id: image-hash-memory
+      name: dsh-image-hash-memory
+      config:
+        enabled: true
+        hammingThreshold: 24
+        enablePhash: true
+        phashThreshold: 12
+        verificationMode: composite
+        autoRecall: true
+        autoRecord: true
+        maxInject: 3
+        maxInjectChars: 1200
+        dbPath: ''
+        debug: false
