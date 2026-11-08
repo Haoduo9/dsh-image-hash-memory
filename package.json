@@ -1,6 +1,6 @@
 {
   "name": "dsh-image-hash-memory",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "基于感知哈希（dHash + aHash + pHash）的图片记忆插件：跨会话认出「这张图我见过」，并把历史上下文注入模型",
   "type": "module",
   "main": "lib/index.js",

@@ -16,6 +16,7 @@ import { apply } from '../lib/index.js'
 
 const PNG = new Uint8Array(readFileSync(new URL('./fixtures/rgb.png', import.meta.url)))
 const PNG2 = new Uint8Array(readFileSync(new URL('./fixtures/other.png', import.meta.url)))
+const JPEG = new Uint8Array(readFileSync(new URL('./fixtures/sample.jpg', import.meta.url)))
 
 /** 造一个够用的假 ctx */
 function fakeContext({ withBytes = true } = {}) {
@@ -71,6 +72,7 @@ function fakeContext({ withBytes = true } = {}) {
           async readImage(ref) {
             if (ref.attachmentId === 'sha256:first') return { ref, data: PNG }
             if (ref.attachmentId === 'sha256:second') return { ref, data: PNG2 }
+            if (ref.attachmentId === 'sha256:jpeg') return { ref, data: JPEG }
             return { ref, data: PNG }
           },
         }
@@ -262,6 +264,49 @@ test('拿不到附件字节时安全跳过', async () => {
     await ctx.waterfall('agent/pre-step', { agent, turn: 1, step: 1, signal: new AbortController().signal, decision })
     const stats = await ctx._tools[0].execute({ action: 'stats' })
     assert.equal(stats.total, 0)
+  } finally {
+    cleanup()
+  }
+})
+
+
+test('同一张图 PNG 入库后再以 JPEG 发送，能认出是同一张', async () => {
+  const { ctx, cleanup } = await boot()
+  try {
+    const agent = sessionAgent()
+    const signal = new AbortController().signal
+    // 第一次：PNG 原图
+    await ctx.waterfall('agent/pre-step', {
+      agent, turn: 1, step: 1, signal,
+      decision: { kind: 'enter', messages: [userMessage('sha256:first', '看看这张图')] },
+    })
+    // 第二次：同一张图的 JPEG 版
+    await ctx.waterfall('agent/pre-step', {
+      agent, turn: 2, step: 1, signal,
+      decision: { kind: 'enter', messages: [userMessage('sha256:jpeg', '又发了一次')] },
+    })
+
+    const spec = ctx._promptContexts.find((entry) => entry.name === 'image-hash-memory:recall')
+    const text = spec.text({ agent })
+    assert.ok(text.includes('累计 2 次'), `应该认出是同一张：${text}`)
+
+    const stats = await ctx._tools[0].execute({ action: 'stats' })
+    assert.equal(stats.total, 1, 'JPEG 不该新建记录')
+  } finally {
+    cleanup()
+  }
+})
+
+test('首次入库的图不会产生注入噪音', async () => {
+  const { ctx, cleanup } = await boot()
+  try {
+    const agent = sessionAgent()
+    await ctx.waterfall('agent/pre-step', {
+      agent, turn: 1, step: 1, signal: new AbortController().signal,
+      decision: { kind: 'enter', messages: [userMessage('sha256:first')] },
+    })
+    const spec = ctx._promptContexts.find((entry) => entry.name === 'image-hash-memory:recall')
+    assert.equal(spec.text({ agent }), '', '新图不该注入记忆')
   } finally {
     cleanup()
   }

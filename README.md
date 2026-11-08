@@ -132,13 +132,27 @@ dsh plugin install /path/to/dsh-image-hash-memory
 
 ## 支持的图片格式
 
-- **PNG** —— 内置纯 JS 解码器（无原生依赖），支持全部颜色类型、
-  1/2/4/8/16 位深、Adam7 隔行扫描。解出的 RGBA 与 PIL 逐字节一致。
-- **JPEG / WebP** —— 需要额外的解码器。DSH 的 attachments 服务内部用 sharp，
-  但没有把解码能力暴露给插件，所以这两种格式目前**跳过不进库**（不报错，只记 debug 日志）。
+两种格式都用**内置的纯 JS 解码器**，不依赖任何原生模块：
 
-以后想做的话，两条路：给 attachments 服务加一个「解码成 RGBA」的方法，
-或者插件里自带的解码器走 `setImageDecoder()` 注入。
+- **PNG** —— 支持全部颜色类型（灰度 / RGB / 调色板 / 灰度+alpha / RGBA）、
+  1/2/4/8/16 位深、Adam7 隔行扫描。解出的 RGBA 与 PIL **逐字节一致**。
+- **JPEG** —— 顺序 DCT（baseline / extended sequential），支持任意采样因子
+  （4:4:4 / 4:2:2 / 4:2:0 / 4:1:1）、优化 Huffman 表、restart marker、
+  灰度与 YCbCr 及 Adobe RGB 色彩变换。色度上采样用双线性。
+
+**实测精度**：同一张图存成 PNG 再存成 JPEG，三种哈希距离分别是
+dHash 5 位、aHash 1 位、pHash 3 位——远低于 24 / 12 的门禁，所以
+「PNG 入库、JPEG 再发」能被正确认出是同一张。
+
+**不支持**：渐进式 JPEG（会明确报错而不是静默解出错数据）、算术编码、
+WebP、GIF。遇到这几种格式，插件跳过该图并继续处理同一轮的其他图，
+不打断对话。
+
+### 为什么不用现成的 JPEG 库
+
+profile 里恰好有 `jpeg-js`（`@jimp/js-jpeg` 的依赖），但那是 **0.4.4**、
+2019 年之后没再维护，而且它只是碰巧在那个位置——不是我们声明的依赖，
+换台机器未必解析得到。自己写一个 600 行的 baseline 解码器，换来零依赖和可控性。
 
 ---
 
@@ -157,11 +171,12 @@ dsh plugin install /path/to/dsh-image-hash-memory
 ## 开发
 
 ```bash
-node --test test/      # 25 个测试
+node --test test/      # 37 个测试
 ```
 
 测试覆盖：哈希一致性 / 最近邻 / 远邻、双门禁、PNG 三种编码解码一致、
-存储层增删改查、插件接线（pre-step → 注入 → 工具调用）。
+JPEG 各种采样与灰度、格式嗅探与分发、存储层增删改查、
+插件接线（pre-step → 注入 → 工具调用）。
 
 ---
 
